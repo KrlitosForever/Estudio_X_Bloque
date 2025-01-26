@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focus Color Timer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: background-color 0.5s ease;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .controls {
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            transition: opacity 0.3s ease;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        input {
+            padding: 12px;
+            margin: 10px;
+            width: 220px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 12px 30px;
+            background: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: transform 0.2s ease;
+        }
+
+        button:hover {
+            background: #27ae60;
+            transform: scale(1.05);
+        }
+
+        .timer {
+            font-size: 10em;
+            font-weight: bold;
+            color: white;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        @media (max-width: 768px) {
+            .timer {
+                font-size: 6em;
+            }
+            
+            .controls {
+                width: 90%;
+                padding: 15px;
+            }
+            
+            input {
+                width: 100%;
+                margin: 8px 0;
+            }
+            
+            button {
+                width: 100%;
+                margin-top: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .timer {
+                font-size: 4em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="controls" class="controls">
+        <input type="number" id="blocks" placeholder="Bloques de estudio" min="1">
+        <input type="number" id="minutes" placeholder="Minutos por bloque" min="1">
+        <button onclick="startSession()">Iniciar Sesión</button>
+    </div>
+    <div class="timer" id="timer" onclick="toggleFullscreen()">00:00</div>
+
+    <script>
+        let currentBlock = 0;
+        let totalBlocks = 0;
+        let studyMinutes = 0;
+        let colors = [];
+        let isBreak = false;
+        let timerInterval = null;
+
+        function generateRandomColor() {
+            const hue = Math.floor(Math.random() * 360);
+            return `hsl(${hue}, 70%, 40%)`;
+        }
+
+        function updateTimerDisplay(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            document.getElementById('timer').textContent = 
+                `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+        }
+
+        function startSession() {
+            // Ocultar controles
+            document.getElementById('controls').classList.add('hidden');
+            
+            // Obtener valores
+            totalBlocks = parseInt(document.getElementById('blocks').value);
+            studyMinutes = parseInt(document.getElementById('minutes').value);
+            
+            // Validación
+            if (!totalBlocks || !studyMinutes || totalBlocks < 1 || studyMinutes < 1) {
+                alert('Por favor ingresa valores válidos');
+                document.getElementById('controls').classList.remove('hidden');
+                return;
+            }
+
+            // Generar colores
+            colors = Array.from({length: totalBlocks}, generateRandomColor);
+            currentBlock = 0;
+            isBreak = false;
+            
+            startNextPeriod();
+        }
+
+        function startNextPeriod() {
+            if (currentBlock >= totalBlocks) {
+                endSession();
+                return;
+            }
+
+            let duration;
+            if (isBreak) {
+                duration = 3 * 60; // 3 minutos de descanso
+                document.body.style.backgroundColor = '#ffffff';
+            } else {
+                duration = studyMinutes * 60;
+                document.body.style.backgroundColor = colors[currentBlock];
+            }
+
+            startCountdown(duration);
+        }
+
+        function startCountdown(seconds) {
+            if (timerInterval) clearInterval(timerInterval);
+            
+            let remaining = seconds;
+            updateTimerDisplay(remaining);
+
+            timerInterval = setInterval(() => {
+                remaining--;
+                updateTimerDisplay(remaining);
+
+                if (remaining <= 0) {
+                    clearInterval(timerInterval);
+                    handlePeriodEnd();
+                }
+            }, 1000);
+        }
+
+        function handlePeriodEnd() {
+            if (!isBreak) {
+                currentBlock++;
+            }
+            isBreak = !isBreak;
+            startNextPeriod();
+        }
+
+        function endSession() {
+            clearInterval(timerInterval);
+            document.body.style.backgroundColor = '';
+            document.getElementById('controls').classList.remove('hidden');
+            updateTimerDisplay(0);
+            alert('¡Sesión completada con éxito! 🎉');
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+    </script>
+</body>
+</html>
